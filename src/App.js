@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import './App.css';
 import "./index.css";
@@ -84,16 +84,76 @@ const menuItems = [
 
 
 function App() {
+  const [cart, setCart] = useState({});
+
+  const addToCart = (id) => {
+    setCart((prevCart) => ({
+      ...prevCart,
+      [id]: (prevCart[id] || 0) + 1,
+    }));
+  };
+
+  const removeFromCart = (id) => {
+    setCart((prevCart) => {
+      if (!prevCart[id]) return prevCart; // Do nothing if item not in cart
+      const updatedCart = { ...prevCart };
+      updatedCart[id] -= 1;
+      if (updatedCart[id] <= 0) delete updatedCart[id]; // Remove item if count reaches 0
+      return updatedCart;
+    });
+  };
+
+  const clearCart = () => {
+    setCart({});
+  };
+
+  const calculateTotal = () => {
+    return Object.entries(cart).reduce((total, [id, quantity]) => {
+      const item = menuItems.find((item) => item.id === parseInt(id));
+      return total + item.price * quantity;
+    }, 0).toFixed(2);
+  };
+
+  const placeOrder = () => {
+    if (Object.keys(cart).length === 0) {
+      alert("No items in cart.");
+      return;
+    }
+
+    let orderSummary = "Order placed:\n";
+    menuItems.forEach((item) => {
+      if (cart[item.id]) {
+        orderSummary += `${item.title}: ${cart[item.id]}x\n`;
+      }
+    });
+    orderSummary += `\nTotal: $${calculateTotal()}`;
+    alert(orderSummary);
+  };
+
   return (
     <div>
       <Header /> 
       <div className="menu">
         <div className="row g-4">
           {menuItems.map((item) => (
-            <MenuItem key={item.id} {...item} />
+            <MenuItem
+            key={item.id}
+            item={item}
+            quantity={cart[item.id] || 0}
+            addToCart={addToCart}
+            removeFromCart={removeFromCart}
+          />
           ))}
         </div>
       </div>
+
+      <div className="cart text-center my-4">
+        <h3>Cart</h3>
+        <p>Total: ${calculateTotal()}</p>
+        <button className="btn btn-danger mx-2" onClick={clearCart}>Clear all</button>
+        <button className="btn btn-success mx-2" onClick={placeOrder}>Order</button>
+      </div>
+
     </div>
   );
 }
